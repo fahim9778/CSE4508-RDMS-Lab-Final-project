@@ -192,3 +192,352 @@ INSERT INTO Rent VALUES (154, 'B1L321', TO_DATE('04-05-2018', 'DD-MM-YYYY'), TO_
 INSERT INTO Rent VALUES (155, 'V1CH16', TO_DATE('29-04-2018', 'DD-MM-YYYY'), TO_DATE('29-05-2018', 'DD-MM-YYYY'));
 
 
+--FUNCTIONS--
+--1--
+--CUSTOMER--
+
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE PROCEDURE loginCustomer_library(user IN VARCHAR2, pass IN VARCHAR2)
+IS
+  passAux customer.password%TYPE;
+BEGIN
+  SELECT password INTO passAux
+  FROM customer
+  WHERE username LIKE user;
+  
+  IF passAux LIKE pass THEN
+    DBMS_OUTPUT.PUT_LINE('User ' || user || ' loging succesfull');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('Password incorrect');
+  END IF;
+  
+  EXCEPTION WHEN no_data_found THEN 
+  DBMS_OUTPUT.PUT_LINE('User incorrect');
+END;
+/
+
+DECLARE
+  user customer.username%TYPE;
+  pass customer.password%TYPE;
+BEGIN
+  user := &Customer_Username;
+  pass := &Customer_Password;
+  loginCustomer_library(user,pass);
+END;
+/
+
+--EMPLOYEE-
+CREATE OR REPLACE PROCEDURE loginEmployee_library(user IN VARCHAR2, pass IN VARCHAR2)
+IS
+  passAux employee.password%TYPE;
+BEGIN
+  SELECT password INTO passAux
+  FROM employee
+  WHERE username LIKE user;
+  
+  IF passAux LIKE pass THEN
+    DBMS_OUTPUT.PUT_LINE('User ' || user || ' loging succesfull');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('Password incorrect');
+  END IF;
+  
+  EXCEPTION WHEN no_data_found THEN 
+  DBMS_OUTPUT.PUT_LINE('User incorrect');
+END;
+/
+
+DECLARE
+  user employee.username%TYPE;
+  pass employee.password%TYPE;
+BEGIN
+  user := &Employee_Username;
+  pass := &Employee_Password;
+  loginEmployee_library(user,pass);
+END;
+/
+
+--2--
+CREATE OR REPLACE PROCEDURE viewItem_library(auxItemID IN VARCHAR2)
+IS
+  auxISBN VARCHAR2(4);
+  auxTitle VARCHAR2(50);
+  auxYear NUMBER;
+  auxState VARCHAR2(10);
+  auxDebyCost NUMBER(10,2);
+  auxLostCost NUMBER(10,2);
+  auxAddress VARCHAR2(50);
+  auxAbala VARCHAR2(1);
+  auxVideo NUMBER;
+  auxBook NUMBER;
+BEGIN
+  
+  SELECT COUNT(*) INTO auxBook
+  FROM book
+  WHERE bookid LIKE auxItemID;
+  
+  SELECT COUNT(*) INTO auxVideo
+  FROM video
+  WHERE videoid LIKE auxItemID;
+  
+  IF auxBook > 0 THEN
+    SELECT isbn, state, avalability, debycost, lostcost, address
+    INTO auxISBN, auxState, auxAbala, auxDebyCost, auxLostCost, auxAddress
+    FROM book
+    WHERE bookid LIKE auxItemID;
+  
+    DBMS_OUTPUT.PUT_LINE('BOOK ' || auxItemID || ' INFO');
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------');
+    DBMS_OUTPUT.PUT_LINE('ISBN: ' || auxISBN);
+    DBMS_OUTPUT.PUT_LINE('STATE: ' || auxState);
+    DBMS_OUTPUT.PUT_LINE('AVALABILITY: ' || auxAbala);
+    DBMS_OUTPUT.PUT_LINE('DEBY COST: ' || auxDebyCost);
+    DBMS_OUTPUT.PUT_LINE('LOST COST: ' || auxLostCost);
+    DBMS_OUTPUT.PUT_LINE('ADDRESS: ' || auxAddress);
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------');
+  ELSIF auxVideo > 0 THEN
+    SELECT title, year, state, avalability, debycost, lostcost, address
+    INTO auxTitle, auxYear, auxState, auxAbala, auxDebyCost, auxLostCost, auxAddress
+    FROM video
+    WHERE videoid LIKE auxItemID;
+  
+    DBMS_OUTPUT.PUT_LINE('VIDEO ' || auxItemID || ' INFO');
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------');
+    DBMS_OUTPUT.PUT_LINE('TITLE: ' || auxTitle);
+    DBMS_OUTPUT.PUT_LINE('YEAR: ' || auxYear);
+    DBMS_OUTPUT.PUT_LINE('STATE: ' || auxState);
+    DBMS_OUTPUT.PUT_LINE('AVALABILITY: ' || auxAbala);
+    DBMS_OUTPUT.PUT_LINE('DEBY COST: ' || auxDebyCost);
+    DBMS_OUTPUT.PUT_LINE('LOST COST: ' || auxLostCost);
+    DBMS_OUTPUT.PUT_LINE('ADDRESS: ' || auxAddress);
+    DBMS_OUTPUT.PUT_LINE('------------------------------------------');
+  END IF;
+END;
+/
+
+/* Item_ID = 2nd column Book and Video Table.
+	BookID starts with B (e.g.: 'B1A123')
+	VideoId starts with V (e.g. : 'V1CH16')
+*/
+
+DECLARE
+  auxItemID VARCHAR2(10);
+BEGIN
+  auxItemID := &Item_ID;
+  viewItem_library(auxItemID);
+END;
+/
+
+--3--
+--CUSTOMER--
+CREATE OR REPLACE PROCEDURE customerAccount_library(custoID IN customer.customerid%TYPE)
+IS
+  auxCard NUMBER;
+  auxFines NUMBER;
+  auxItem VARCHAR(6);
+  rented number := 0;
+BEGIN
+  SELECT cardnumber INTO auxCard
+  FROM customer
+  WHERE customerid LIKE custoID;
+  
+  SELECT COUNT(*) INTO rented
+  FROM rent
+  WHERE rent.cardid LIKE auxcard;
+  
+  DBMS_OUTPUT.PUT_LINE('The user card is ' || auxCard);  
+  IF (rented > 0) THEN
+    SELECT rent.itemid INTO auxItem
+    FROM rent,card
+    WHERE card.cardid = rent.cardid
+    AND card.cardid LIKE auxCard;    
+    
+    DBMS_OUTPUT.PUT_LINE('The user has ' || auxItem || ' rented');
+  ELSE    
+    DBMS_OUTPUT.PUT_LINE('This user has no rents'); 
+  END IF;
+  
+  SELECT fines INTO auxFines
+  FROM card
+  WHERE cardid LIKE auxcard;
+  
+  DBMS_OUTPUT.PUT_LINE('The user fines are ' || auxFines);
+    
+  EXCEPTION WHEN no_data_found THEN 
+  DBMS_OUTPUT.PUT_LINE('NOT DATA FOUND');
+END;
+/
+
+DECLARE
+  custoID customer.customerID%TYPE;
+BEGIN
+  custoID := &Customer_ID;
+  customerAccount_library(custoID);
+END;
+/
+
+--EMPLOYEE--
+CREATE OR REPLACE PROCEDURE employeeAccount_library(emploID IN employee.employeeid%TYPE)
+IS
+  auxCard NUMBER;
+  auxFines NUMBER;
+  auxItem VARCHAR(6);
+  rented number := 0;
+BEGIN
+  SELECT cardnumber INTO auxCard
+  FROM employee
+  WHERE employeeid LIKE emploID;
+  
+  SELECT COUNT(*) INTO rented
+  FROM rent
+  WHERE rent.cardid LIKE auxcard;
+  
+  DBMS_OUTPUT.PUT_LINE('The user card is ' || auxCard);  
+  IF (rented > 0) THEN
+    SELECT rent.itemid INTO auxItem
+    FROM rent,card
+    WHERE card.cardid = rent.cardid
+    AND card.cardid LIKE auxCard;    
+    
+    DBMS_OUTPUT.PUT_LINE('The user has ' || auxItem || ' rented');
+  ELSE    
+    DBMS_OUTPUT.PUT_LINE('This user has no rents'); 
+  END IF;
+  
+  SELECT fines INTO auxFines
+  FROM card
+  WHERE cardid LIKE auxcard;
+  
+  DBMS_OUTPUT.PUT_LINE('The user fines are ' || auxFines);
+    
+  EXCEPTION WHEN no_data_found THEN 
+  DBMS_OUTPUT.PUT_LINE('NOT DATA FOUND');
+END;
+/
+
+DECLARE
+  emploID employee.employeeID%TYPE;
+BEGIN
+  emploID := &Employee_ID;
+  employeeAccount_library(emploID);
+END;
+/
+
+--4--
+CREATE OR REPLACE PROCEDURE rentItem_library(auxCard IN NUMBER, auxItemID IN VARCHAR2, itemType IN VARCHAR2, auxDate IN VARCHAR2)
+IS
+  statusAux VARCHAR2(1);
+  itemStatus VARCHAR2(1);
+BEGIN
+  
+  SELECT status INTO statusAux
+  FROM card
+  WHERE cardid LIKE auxCard;
+  
+  IF statusAux LIKE 'A' THEN
+    IF itemType LIKE 'book' THEN
+      SELECT avalability INTO itemStatus
+      FROM book
+      WHERE bookid LIKE auxItemID;
+      
+      IF itemStatus LIKE 'A' THEN
+        UPDATE book
+        SET avalability = 'O'
+        WHERE bookid LIKE auxItemID;
+        
+        INSERT INTO rent
+        VALUES (auxCard,auxItemID,sysdate,TO_DATE(auxDate, 'DD-MON-RR'));
+        DBMS_OUTPUT.PUT_LINE('Item ' || auxItemID || ' rented');
+      ELSE
+        DBMS_OUTPUT.PUT_LINE('The item is already rented');
+      END IF;
+      
+    ELSIF itemType LIKE 'video' THEN
+     
+      SELECT avalability INTO itemStatus
+      FROM video
+      WHERE videoid LIKE auxItemID;
+      
+      IF itemStatus LIKE 'A' THEN
+        UPDATE video
+        SET avalability = 'O'
+        WHERE videoid LIKE auxItemID;
+        
+        INSERT INTO rent
+        VALUES (auxCard,auxItemID,sysdate,TO_DATE(auxDate, 'DD-MM-YYYY'));
+        DBMS_OUTPUT.PUT_LINE('Item ' || auxItemID || ' rented');
+      ELSE
+        DBMS_OUTPUT.PUT_LINE('The item is already rented');
+      END IF;
+    END IF;
+    
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('The user is blocked');
+  END IF;    
+END;
+/
+
+/*
+if Problem to INSERT Return DATE, check this command without quotes 'show parameters nls_date_format;' for your system's DATE format
+*/
+DECLARE
+  auxCard NUMBER;
+  auxItemID VARCHAR2(10);
+  itemType VARCHAR2(20);
+  auxDate VARCHAR2(20);
+BEGIN
+  auxCard := &Card_ID;
+  itemType := &Item_Type_book_or_video;  
+  auxItemID := &ID_Item;  
+  auxDate := &Return_date;
+  rentItem_library(auxCard,auxItemID,itemType,auxDate);
+END;
+/
+
+--5--
+CREATE OR REPLACE PROCEDURE payFines_library(auxCard IN card.cardID%TYPE, money IN NUMBER)
+IS
+  finesAmount NUMBER;
+  total NUMBER;
+BEGIN
+  SELECT fines INTO finesAmount
+  FROM card
+  WHERE cardID LIKE auxCard;
+  
+  IF finesAmount < money THEN
+    total := money - finesAmount;
+    DBMS_OUTPUT.PUT_LINE('YOU PAY ALL YOUR FINES AND YOU HAVE ' || total || ' MONEY BACK');
+    
+    UPDATE card
+    SET status = 'A', fines = 0
+    WHERE cardid = auxCard;
+    
+  ELSIF finesAmount = money THEN
+    total := money - finesAmount;
+    DBMS_OUTPUT.PUT_LINE('YOU PAY ALL YOUR FINES');
+    
+    UPDATE card
+    SET status = 'A', fines = 0
+    WHERE cardid = auxCard;
+  
+  ELSE
+    total := finesAmount - money;
+    DBMS_OUTPUT.PUT_LINE('YOU WILL NEED TO PAY ' || total || ' MORE DOLLARS TO UNLOCK YOUR CARD');
+    
+    UPDATE card
+    SET fines = total
+    WHERE cardid = auxCard;
+  END IF;
+END;
+/
+
+DECLARE
+  auxCard card.cardid%TYPE;
+  money NUMBER;
+BEGIN
+  auxCard := &Card_ID;
+  money := &Money_To_Pay;
+  payFines_library(auxCard,money);
+END;
+/
+
