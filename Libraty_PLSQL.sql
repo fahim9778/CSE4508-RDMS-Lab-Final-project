@@ -184,7 +184,7 @@ INSERT INTO Video VALUES ('ANCESTORS OF THE HUMANITY', 1998, 'V1AN98', 'BAD', 'A
 INSERT INTO Video VALUES ('PHYSICS, MOST BORING SH*T', 2018, 'V1PH18', 'NEW', 'A', 1, 5, 'PHYSICS ROAD');
 
 
-INSERT INTO Rent VALUES (101, 'B2A123', TO_DATE('10-05-2018', 'DD-MM-YYYY'), TO_DATE('20-05-2018, 'DD-MM-YYYY'));
+INSERT INTO Rent VALUES (101, 'B2A123', TO_DATE('10-05-2018', 'DD-MM-YYYY'), TO_DATE('20-05-2018', 'DD-MM-YYYY'));
 INSERT INTO Rent VALUES (102, 'B1Z123', TO_DATE('10-05-2018','DD-MM-YYYY'),  TO_DATE('25-05-2018', 'DD-MM-YYYY'));
 INSERT INTO Rent VALUES (104, 'V1JA15', TO_DATE('01-05-2018', 'DD-MM-YYYY'), TO_DATE('21-05-2018', 'DD-MM-YYYY'));
 INSERT INTO Rent VALUES (105, 'V1DI00', TO_DATE('02-05-2018', 'DD-MM-YYYY'), TO_DATE('25-05-2018', 'DD-MM-YYYY'));
@@ -541,3 +541,444 @@ BEGIN
 END;
 /
 
+--6--
+--CUSTOMER--
+CREATE OR REPLACE PROCEDURE updateInfoCusto_library(auxCustomer IN customer.customerid%TYPE, pNumber NUMBER, address VARCHAR2, newPass VARCHAR2)
+IS
+BEGIN
+  UPDATE customer
+  SET phone = pNumber, customeraddress = address, password = newPass
+  WHERE customerid = auxCustomer;
+END;
+/
+DECLARE
+  auxCustomer customer.customerid%TYPE;
+  pNumber NUMBER;
+  address VARCHAR2(230);
+  newPass VARCHAR2(20);
+BEGIN
+  auxCustomer := &Customer_ID;
+  pNumber := &New_Phone_OR_Old_one;
+  address := &New_Address_OR_Old_one;
+  newPass := &New_Password_OR_Old_one;
+  updateInfoCusto_library(auxCustomer,pNumber,address,newPass);
+END;
+/
+
+--EMPLOYEE--
+CREATE OR REPLACE PROCEDURE updateInfoEmp_library(auxEmployee IN employee.employeeid%TYPE, pNumber NUMBER, address VARCHAR2, newPass VARCHAR2, newPayCheck NUMBER,
+newBranch VARCHAR2)
+IS
+BEGIN
+  UPDATE employee
+  SET phone = pNumber, employeeAddress = address, password = newPass, paycheck = auxEmployee, branchname = newBranch
+  WHERE employeeid = auxEmployee;
+END;
+/
+DECLARE
+  auxEmployee employee.employeeID%TYPE;
+  pNumber NUMBER;
+  address VARCHAR2(30);
+  newPass VARCHAR2(20);
+  newPayCheck NUMBER;
+  newBranch VARCHAR2(30);
+BEGIN
+  auxEmployee := &Employee_ID;
+  pNumber := &New_Phone_OR_Old_one;
+  address := &New_Address_OR_Old_one;
+  newPass := &New_Password_OR_Old_one;
+  newPayCheck := &New_PayCheck_OR_Old_one;
+  newBranch := &New_Branch_OR_Old_one;
+  updateInfoEmp_library(auxEmployee,pNumber,address,newPass,newPayCheck,newBranch);
+END;
+/
+
+--7--
+CREATE OR REPLACE PROCEDURE addCustomer_library(auxCustomerId IN NUMBER, auxName IN VARCHAR2, auxCustomerAddress IN VARCHAR2, auxPhone IN NUMBER,
+auxPass IN VARCHAR2, auxUserName IN VARCHAR2, auxCardNumber IN NUMBER)
+IS
+BEGIN
+  INSERT INTO customer
+  VALUES (auxCustomerId,auxName,auxCustomerAddress,auxPhone,auxPass,auxUserName,sysdate,auxCardNumber);
+END;
+/
+DECLARE
+  auxCustomerId NUMBER;
+  auxName VARCHAR2(20);
+  auxCustomerAddress VARCHAR2(20);
+  auxPhone NUMBER;
+  auxPass VARCHAR2(20);
+  auxUserName VARCHAR2(20);
+  auxCardNumber NUMBER;
+BEGIN
+  auxCustomerId := &Customer_ID;
+  auxName := &Name;
+  auxCustomerAddress := &Address;
+  auxPhone := &Phone;
+  auxPass := &Password;
+  auxUserName := &User_Name;
+  auxCardNumber := &Card_Numeber;
+  addCustomer_library(auxCustomerId,auxName,auxCustomerAddress,auxPhone,auxPass,auxUserName,auxCardNumber);
+END;
+/
+--8--
+--CUSTOMER--
+CREATE OR REPLACE TRIGGER addCardCusto_library
+AFTER INSERT
+ON customer
+FOR EACH ROW
+DECLARE
+BEGIN
+  INSERT INTO card
+  VALUES (:new.cardnumber,'A',0);
+  
+  DBMS_OUTPUT.PUT_LINE('Card created');
+END;
+/
+
+--EMPLOYEE--
+CREATE OR REPLACE TRIGGER addCardEmp_library
+AFTER INSERT
+ON employee
+FOR EACH ROW
+DECLARE
+BEGIN
+  INSERT INTO card
+  VALUES (:new.cardnumber,'A',0);
+  
+  DBMS_OUTPUT.PUT_LINE('Card created');
+END;
+/
+
+--EXAMPLE--
+INSERT INTO customer
+VALUES (12,'MARI CARMEN','CORDOBA',645892456,'maricarmen123','ma11',sysdate,111);
+
+--9--
+CREATE OR REPLACE PROCEDURE allMedia_library(mediaType VARCHAR2)
+IS
+  CURSOR cBooks
+  IS
+    SELECT *
+    FROM book;
+  
+  CURSOR cVideos
+  IS
+    SELECT *
+    FROM video;
+  
+  xBooks cBooks%ROWTYPE;
+  xVideos cVideos%ROWTYPE;
+BEGIN
+  IF mediaType LIKE 'books' THEN
+    OPEN cBooks;
+    
+    DBMS_OUTPUT.PUT_LINE('ISBN     ID     STATE     AVALABILITY     DEBY_COST     LOST_COST    LOCATION');
+    DBMS_OUTPUT.PUT_LINE('-----------------------------------------------------------------------------');
+    
+    LOOP
+      FETCH cBooks
+      INTO xBooks;
+      EXIT WHEN cBooks%NOTFOUND;
+      
+      DBMS_OUTPUT.PUT_LINE(xBooks.isbn || '     ' || xBooks.bookid || '     ' || xBooks.state || '     ' || xBooks.avalability || '     ' || xBooks.debycost || '     ' ||
+      xBooks.lostcost || '     ' || xBooks.address);
+    END LOOP;
+  ELSIF mediaType LIKE 'videos' THEN
+    OPEN cVideos;
+    DBMS_OUTPUT.PUT_LINE('TITLE     YEAR     ID     STATE     AVALABILITY     DEBY_COST     LOST_COST    LOCATION');
+    DBMS_OUTPUT.PUT_LINE('---------------------------------------------------------------------------------------');
+    LOOP
+      FETCH cVideos
+      INTO xVideos;
+      EXIT WHEN cVideos%NOTFOUND;
+      
+      DBMS_OUTPUT.PUT_LINE(xVideos.title || '     ' || xVideos.year || '     ' || xVideos.videoid || '     ' || xVideos.state || '     ' || xVideos.avalability || '     ' || xVideos.debycost || '     ' ||
+      xVideos.lostcost || '     ' || xVideos.address);
+    END LOOP;
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('TYPE INCORRECT, you must choose between books or videos');
+  END IF;
+END;
+/
+DECLARE
+  typeItem VARCHAR2(10);
+BEGIN
+  typeItem := &Select_between_books_or_videos;
+  allMedia_library(typeItem);
+END;
+/
+
+--10--
+CREATE OR REPLACE PROCEDURE handleReturns_library(auxItemID IN VARCHAR2)
+IS
+  auxRented NUMBER;
+  auxBook NUMBER;
+  auxVideo NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO auxRented
+  FROM rent
+  WHERE itemid LIKE auxItemID;
+  
+  SELECT COUNT(*) INTO auxBook
+  FROM book
+  WHERE bookid LIKE auxItemID;
+  
+  SELECT COUNT(*) INTO auxVideo
+  FROM video
+  WHERE videoid LIKE auxItemID;
+  
+  IF auxRented > 0 THEN
+    DELETE FROM rent
+    WHERE itemid = auxItemID;
+    IF auxBook > 0 THEN
+      UPDATE book
+      SET avalability = 'A'
+      WHERE bookid LIKE auxItemID;
+      DBMS_OUTPUT.PUT_LINE('The book ' || auxItemID || ' is now avaible.');
+    ELSIF auxVideo > 0 THEN
+      UPDATE video
+      SET avalability = 'A'
+      WHERE videoid LIKE auxItemID;
+      DBMS_OUTPUT.PUT_LINE('The video ' || auxItemID || ' is now avaible.');
+    END IF;
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('This item is not rented at the moment');
+  END IF;
+  EXCEPTION WHEN no_data_found THEN 
+  DBMS_OUTPUT.PUT_LINE('Item ID incorrect');    
+END;
+/
+DECLARE
+  auxItemID VARCHAR2(10);
+BEGIN
+  auxItemID := &ItemID_to_return;
+  handleReturns_library(auxItemID);
+END;
+/
+
+SELECT * FROM rent;
+SELECT * FROM book;
+
+
+--11--
+CREATE OR REPLACE TRIGGER modifyFines_library
+AFTER DELETE
+ON rent
+FOR EACH ROW
+DECLARE
+  auxCardID NUMBER;
+  auxItemID VARCHAR2(6);
+  auxBook NUMBER;
+  auxVideo NUMBER;
+  auxDeby NUMBER;
+BEGIN  
+  SELECT cardid, itemid INTO auxCardID, auxItemID
+  FROM rent
+  WHERE cardid LIKE :old.cardid;
+  
+  SELECT COUNT(*) INTO auxBook
+  FROM book
+  WHERE bookid LIKE auxItemID;
+  
+  SELECT COUNT(*) INTO auxVideo
+  FROM video
+  WHERE videoid LIKE auxItemID;
+  
+  IF sysdate > :old.returndate THEN
+    IF auxVideo > 0 THEN 
+      SELECT debyCost INTO auxDeby
+      FROM video
+      WHERE videoid LIKE auxItemID;
+    ELSIF auxBook > 0 THEN
+      SELECT debyCost INTO auxDeby
+      FROM book
+      WHERE bookid LIKE auxItemID;
+    END IF;
+    
+    UPDATE card
+    SET status = 'B', fines = (fines + auxDeby)
+    WHERE cardid LIKE auxCardID;
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('The item has been return before deadline');
+  END IF;
+END;
+/
+--EXAMPLE--
+INSERT INTO customer
+VALUES (13,'ALEJANDRO','ZAIDIN',629629629,'alex123','al12',sysdate,112);
+
+DECLARE
+  auxCard NUMBER;
+  auxItemID VARCHAR2(10);
+  itemType VARCHAR2(20);
+  auxDate VARCHAR2(20);
+BEGIN
+  auxCard := &Card_ID;
+  itemType := &Item_Type_book_or_video;  
+  auxItemID := &ID_Item;  
+  auxDate := &Return_date;
+  rentItem_library(auxCard,auxItemID,itemType,auxDate);
+END;
+/
+
+DECLARE
+  auxItemID VARCHAR2(10);
+BEGIN
+  auxItemID := &ItemID_to_return;
+  handleReturns_library(auxItemID);
+END;
+/
+
+--12--
+--BOOK--
+CREATE OR REPLACE PROCEDURE addBook_library(auxISBN IN VARCHAR2, auxBookID IN VARCHAR2, auxState IN VARCHAR2, auxDebyCost IN NUMBER,
+auxLostCost IN NUMBER, auxAddress IN VARCHAR2)
+IS
+BEGIN
+  INSERT INTO book
+  VALUES(auxISBN,auxBookID,auxState,'A',auxDebyCost,auxLostCost,auxAddress);
+  DBMS_OUTPUT.PUT_LINE('Book inserted correctly');
+END;
+/
+--VIDEO--
+CREATE OR REPLACE PROCEDURE addVideo_library(auxTitle IN VARCHAR2, auxYear IN INT, auxVideoID IN VARCHAR2, auxState IN VARCHAR2, auxDebyCost IN NUMBER,
+auxLostCost IN NUMBER, auxAddress IN VARCHAR2)
+IS
+BEGIN
+  INSERT INTO video
+  VALUES(auxTitle,auxYear,auxVideoID,auxState,'A',auxDebyCost,auxLostCost,auxAddress);
+  DBMS_OUTPUT.PUT_LINE('Video inserted correctly');
+END;
+/
+-- Add a New book
+DECLARE
+  auxISBN VARCHAR2(4);
+  auxItemID VARCHAR2(6);
+  auxState VARCHAR2(10);
+  auxDebyCost NUMBER(10,2);
+  auxLostCost NUMBER(10,2);
+  auxAddress VARCHAR2(50);
+BEGIN
+    auxISBN := &ISBN;
+    auxItemID := &ItemID;
+    auxState := &State;
+    auxDebyCost := &Deby_Cost;
+    auxLostCost := &Lost_Cost;
+    auxAddress := &Location;
+    addBook_library(auxISBN, auxItemID, auxState, auxDebyCost, auxLostCost, auxAddress);
+END;
+/
+-- Add a New Video
+DECLARE
+  auxTitle VARCHAR2(50);
+  auxYear INT;
+  auxItemID VARCHAR2(6);
+  auxState VARCHAR2(10);
+  auxDebyCost NUMBER(10,2);
+  auxLostCost NUMBER(10,2);
+  auxAddress VARCHAR2(50);
+BEGIN
+    auxTitle := &Title;
+    auxYear := &Year;
+    auxItemID := &ItemID;
+    auxState := &State;
+    auxDebyCost := &Deby_Cost;
+    auxLostCost := &Lost_Cost;
+    auxAddress := &Location;
+    addVideo_library(auxTitle, auxYear, auxItemID, auxState, auxDebyCost, auxLostCost, auxAddress);
+END;
+/
+
+--13--
+CREATE OR REPLACE PROCEDURE removeItem_library(auxItemID IN VARCHAR2)
+IS
+  auxBook NUMBER;
+  auxVideo NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO auxBook
+  FROM book
+  WHERE bookid LIKE auxItemID;
+  
+  SELECT COUNT(*) INTO auxVideo
+  FROM video
+  WHERE videoid LIKE auxItemID;
+  
+  IF auxBook > 0 THEN
+    DELETE FROM book
+    WHERE bookid LIKE auxItemID;
+    DBMS_OUTPUT.PUT_LINE('Book removed correctly');
+  ELSIF auxVideo > 0 THEN
+    DELETE FROM video
+    WHERE videoid LIKE auxItemID;
+    DBMS_OUTPUT.PUT_LINE('Video removed correctly');
+  END IF;
+END;
+/
+DECLARE
+  auxItemID VARCHAR2(10);
+BEGIN
+  auxItemID := &ItemID_to_remove;
+  removeItem_library(auxItemID);
+END;
+/
+
+--14--
+CREATE OR REPLACE PROCEDURE viewCustomer_library(auxCustomerID IN NUMBER)
+IS
+  custoName VARCHAR2(40);
+  custoAdd VARCHAR2(50);
+  custoPhone NUMBER(9);
+  userNaM VARCHAR2(10);
+  custoDate DATE;
+  custoCard NUMBER;
+BEGIN
+  SELECT name,customeraddress,phone,username,datesignup,cardnumber
+  INTO custoName, custoAdd, custoPhone, userNaM, custoDate, custoCard
+  FROM customer
+  WHERE customerid LIKE auxCustomerID;
+  
+  DBMS_OUTPUT.PUT_LINE('CUSTOMER ' || auxCustomerID || ' INFO');
+  DBMS_OUTPUT.PUT_LINE('------------------------------------------');
+  DBMS_OUTPUT.PUT_LINE('NAME: ' || custoName);
+  DBMS_OUTPUT.PUT_LINE('ADDRESS: ' || custoAdd);
+  DBMS_OUTPUT.PUT_LINE('PHONE: ' || custoPhone);
+  DBMS_OUTPUT.PUT_LINE('USER NAME: ' || userNaM);
+  DBMS_OUTPUT.PUT_LINE('DATE OF SIGN UP: ' || custoDate);
+  DBMS_OUTPUT.PUT_LINE('CARD NUMBER: ' || custoCard);
+  DBMS_OUTPUT.PUT_LINE('------------------------------------------');
+  
+END;
+/
+DECLARE
+  auxCustoID VARCHAR2(10);
+BEGIN
+  auxCustoID := &CustomerID;
+  viewCustomer_library(auxCustoID);
+END;
+/
+--OBJECT--
+CREATE OR REPLACE TYPE director_library AS OBJECT(
+employeeid NUMBER,
+name VARCHAR2(40),
+address VARCHAR2(50),
+phone INT(10),
+paycheck NUMBER(10,2),
+extrapaycheck NUMBER(10,2)
+);
+/
+
+DECLARE 
+   director director_library; 
+BEGIN 
+   director := director_library(160041014, 'Gazzali_The_BOSS', 'UNIVERSE', 1536192302,9999.99,999); 
+   dbms_output.put_line('DIRECTOR ID: '|| director.employeeid); 
+   dbms_output.put_line('--------------------------------------------' ); 
+   dbms_output.put_line('NAME: '|| director.name); 
+   dbms_output.put_line('ADDRESS: '|| director.address); 
+   dbms_output.put_line('PHONE: '|| director.phone); 
+   dbms_output.put_line('PAYCHECK: '|| director.paycheck); 
+   dbms_output.put_line('EXTRA: '|| director.extrapaycheck);
+   dbms_output.put_line('--------------------------------------------' ); 
+END;
+/
